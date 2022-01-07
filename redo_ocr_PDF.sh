@@ -169,6 +169,6 @@ else
 fi
 
 if [[ -z $silent ]]; then
-	terminal-notifier -message "Your OCR is complete!" -title "$final" -sound default
-	# termux-notification --content "Your OCR is complete!" --title "$final" --sound
+	# terminal-notifier -message "Your OCR is complete!" -title "$final" -sound default
+	termux-notification --content "Your OCR is complete!" --title "$final" --sound
 fi
