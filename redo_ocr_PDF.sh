@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 datestring=`date +%Y-%m-%d_%H.%M.%S`
 dir_path=$(dirname $0)
@@ -7,7 +7,7 @@ ldate=`echo ${#datestring}`
 maxl=`expr 255 - $ldate`
 tmpdir=`echo $TMPDIR`
 keepfirst=false
-lang=""
+lang='eng'
 
 # Read flags
 # Provide help if no argument
@@ -23,10 +23,12 @@ while test $# -gt 0; do
       echo "This script will remove existing text in a PDF and then perform OCR and"
       echo "add that text to it the original."
       echo ""
+      echo "Usage: redo_ocr_PDF [options] filename [ocrmypdf (optimize) options]"
       echo "options:"
       echo "-h, --help     Show this brief help."
       echo "-f, --first    Keep the first page of the original PDF."
       echo "-l language    Use this language for OCR (defaults to English)"
+      echo "-o, --opt      Enable PDF optimization. Pass (optimize) options (such as --rotate-pages --deskew --jbig2-lossy) after input filename"
       echo "               Use one of tesserat's 3-letter codes for this"
       exit 0
       ;;
@@ -38,6 +40,10 @@ while test $# -gt 0; do
       shift
       lang=$1
       shift
+      ;;
+    -o|--opt)
+      shift
+      opt=true
       ;;
     *)
       break
@@ -53,6 +59,9 @@ then
   echo "\aYou must enter a filename."
   exit 0
 fi
+
+# Make sure $1 is shifted out
+shift
 
 # Make sure file exists
 if [[ ! -s "$input" ]]
@@ -74,10 +83,12 @@ fi
 
 # Check for language. Easy to forget to specify.
 # Needs some error checking
-if [[ $lang == '' ]]
+if [[ -z $lang ]]
 then
+	printf "\n"
     read -p 'No language was specified. Hit enter to use English or supply the 3-letter language code: ' langInput
-    if [[ $langInput == '' ]]
+    printf "\n"
+    if [[ -z $langInput ]]
     then
         lang='eng'
     else
@@ -87,9 +98,9 @@ fi
 
 # Get final output file name
 final=`basename "$input"`
-final=`echo ${final%.*}`
-final=`echo ${final:0:$maxl}`
-final="$final"_"$datestring".pdf
+final="${final%.*}-ocr.pdf"
+## final="${final:0:$maxl}"
+## final="$final"_"$datestring".pdf
 origdir=`dirname "$input"`
 
 # Get some of the original document metadata to add back at the end
@@ -102,6 +113,13 @@ then
   inputold="$input"
   input="$tmpdir"input_new.pdf
   qpdf "$inputold" --pages . 2-z -- "$input"
+fi
+
+if [[ $opt ]]; then
+	input_opt="$tmpdir/input_opt.pdf"
+	# optimize original pdf before ocr
+	ocrmypdf --skip-text "$input" "$input_opt" --lang="$lang" "$@"
+	input="$input_opt"
 fi
 
 # strip text from the PDF
@@ -117,8 +135,9 @@ then
   exit 0
 fi
 
+
 # ocr the original pdf
-ocrmypdf --force-ocr --output-type pdf -l $lang "$tmpdir/no_text.pdf" "$tmpdir/ocr_output.pdf"
+ocrmypdf --force-ocr --pdf-renderer=hocr --output-type pdf -l $lang "$tmpdir/no_text.pdf" "$tmpdir/ocr_output.pdf"
 
 #strip images from that result
 gs -o "$tmpdir/textonly.pdf" -dFILTERIMAGE -dFILTERVECTOR -sDEVICE=pdfwrite "$tmpdir/ocr_output.pdf"
@@ -145,4 +164,3 @@ else
 fi
 
 terminal-notifier -message "Your OCR is complete." -title "Yay!" -sound default
-
