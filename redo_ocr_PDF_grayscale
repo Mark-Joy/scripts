@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+declare -a args
+
+while test $# -gt 0; do
+  case "$1" in
+    -h|--help)
+      echo ""
+      echo "This script will remove existing text in a PDF and then perform OCR and"
+      echo "add that text to it the original. ocrmypdf default (optimize) options: --deskew --jbig2-lossy --optimize=3"
+      echo ""
+      echo "Usage: redo_ocr_PDF [options] filename [ocrmypdf (optimize) options]"
+      echo "options:"
+      echo "-h, --help     Show this brief help."
+      echo "-f, --first    Keep the first page of the original PDF."
+      echo "-l language    Use this language for OCR (defaults to English)"
+      echo "-s, --silent   Don't issue Notification on completion."
+      echo "-o, --opt      Enable PDF optimization (default). Pass (optimize) options (such as: --deskew --jbig2-lossy --optimize=3) after the input-filename"
+      echo "               Use one of tesserat's 3-letter codes for this"
+      exit 0
+      ;;
+    -f|--first)
+      shift
+      #first=true
+      args+=('-f')
+      ;;
+    -l)
+      shift
+      #lang=$1
+      args+=("-l $1")
+      shift
+      ;;
+    -s|--silent)
+      shift
+      #silent=true
+      args+=('-s')
+      ;;
+    -o|--opt)
+      shift
+      #opt=true
+      args+=('-o')
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+input="$1"
+#input_extension="${1##*.}"
+
+if [[ "$1" == "" ]]
+then
+  echo "\aYou must enter a filename."
+  exit 0
+fi
+# Make sure $1 is shifted out
+shift
+
+## https://stackoverflow.com/questions/59895/how-can-i-get-the-source-directory-of-a-bash-script-from-within-the-script-itsel
+dir=`dirname "${BASH_SOURCE[0]}"`
+
+echo redo_ocr_PDF.sh -o "${args[@]}" "$input" --deskew --jbig2-lossy --optimize=3 "$@"
+"$dir/redo_ocr_PDF.sh" -o "${args[@]}" "$input" --deskew --jbig2-lossy --optimize=3 "$@"
