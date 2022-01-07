@@ -28,7 +28,8 @@ while test $# -gt 0; do
       echo "-h, --help     Show this brief help."
       echo "-f, --first    Keep the first page of the original PDF."
       echo "-l language    Use this language for OCR (defaults to English)"
-      echo "-o, --opt      Enable PDF optimization. Pass (optimize) options (such as --rotate-pages --deskew --jbig2-lossy) after input filename"
+      echo "-s, --silent   Don't issue Notification on completion."
+      echo "-o, --opt      Enable PDF optimization. Pass (optimize) options (such as: --deskew --jbig2-lossy --optimize=3) after the input-filename"
       echo "               Use one of tesserat's 3-letter codes for this"
       exit 0
       ;;
@@ -40,6 +41,10 @@ while test $# -gt 0; do
       shift
       lang=$1
       shift
+      ;;
+    -s|--silent)
+      shift
+      silent=true
       ;;
     -o|--opt)
       shift
@@ -163,4 +168,7 @@ else
   mv "$tmpdir/final.pdf" "$origdir"/"$final"
 fi
 
-terminal-notifier -message "Your OCR is complete." -title "Yay!" -sound default
+if [[ -z $silent ]]; then
+	terminal-notifier -message "Your OCR is complete!" -title "$final" -sound default
+	# termux-notification --content "Your OCR is complete!" --title "$final" --sound
+fi
